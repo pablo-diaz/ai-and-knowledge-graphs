@@ -1,0 +1,31 @@
+﻿@page
+@model IndexModel
+@{
+    ViewData["Title"] = "Questions";
+}
+
+@if (Model.State == IndexModel.InteractingState.ASKING)
+{
+    <div class="text-center">
+        <form method="post" asp-page-handler="AskQuestion">
+            <textarea asp-for="Question" class="form-control" rows="4" cols="50" placeholder="Type your question here..."></textarea><br />
+            <br />
+            <button type="submit" class="btn btn-primary">Ask question</button>
+        </form>
+    </div>
+}
+
+@if (Model.State == IndexModel.InteractingState.ANSWERING)
+{
+    <div>
+        <br/>
+        <span style="visibility:hidden;" id="txtSessionId">@Model.UserSession.Id</span>
+        <div id="dvProgress" class="event-container d-flex flex-column gap-3">
+            <p class="text-muted" id="empty-state">Answering...</p>
+        </div>
+
+        <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+
+        <script src="~/js/eventHandling.js"></script>
+    </div>
+}
