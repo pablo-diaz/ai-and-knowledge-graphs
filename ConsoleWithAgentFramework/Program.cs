@@ -24,7 +24,7 @@ internal class Program
         await Logic.ProcessEachUserQuestion(
             userQuestionsToProcess: Utilities.GetQuestionsFromUser(
                 maybeUserQuestionProvided: args.Length == 1 ? args[0] : null),
-            settings: new(FullLlm: fullLlm, LightLlm: lightLlm, neo4jService),
+            settings: new(FullLlm: fullLlm, LightLlm: lightLlm, neo4jService, cancellationToken: default),
             fnReportProgress: progress => {
                 Console.WriteLine(progress);
                 return Task.CompletedTask;
