@@ -12,9 +12,11 @@ namespace Application.WorkflowOrchestrationLogic;
 public sealed class DecoratorForChatClient : IChatClient
 {
     private readonly IChatClient _innerChatClient;
+    private readonly Constants.LlmProvider _provider;
 
     public DecoratorForChatClient(Constants.LlmProvider provider, string llmApiKey, string modelName)
     {
+        this._provider = provider;
         if (provider == Constants.LlmProvider.Gemini)
         {
             _innerChatClient = new Google.GenAI.Client(apiKey: llmApiKey)
@@ -30,8 +32,17 @@ public sealed class DecoratorForChatClient : IChatClient
             throw new NotSupportedException($"The provider {provider} is not supported");
     }
 
-    public Task<ChatResponse> GetResponseAsync(IEnumerable<ChatMessage> messages, ChatOptions options = null, CancellationToken cancellationToken = default) =>
-        _innerChatClient.GetResponseAsync(messages, options, cancellationToken);
+    public async Task<ChatResponse> GetResponseAsync(IEnumerable<ChatMessage> messages, ChatOptions options = null, CancellationToken cancellationToken = default)
+    {
+        try
+        {
+            return await _innerChatClient.GetResponseAsync(messages, options, cancellationToken);
+        }
+        catch (Exception ex)
+        {
+            throw Infrastructure.AgentRequestFailed.Create(fromException: ex, usingProvider: _provider);
+        }
+    }
 
     public object GetService(Type serviceType, object serviceKey = null) =>
         _innerChatClient.GetService(serviceType, serviceKey);
