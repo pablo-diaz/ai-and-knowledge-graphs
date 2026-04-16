@@ -1,8 +1,10 @@
-﻿using System;
+﻿using Neo4j.Driver;
+using Newtonsoft.Json.Linq;
+using System;
+using System.Collections.Generic;
 using System.Linq;
+using System.Threading;
 using System.Threading.Tasks;
-
-using Neo4j.Driver;
 
 namespace Infrastructure;
 
@@ -31,11 +33,13 @@ public class Neo4jService : IDisposable
         _client = GraphDatabase.Driver(new Uri(uriString: url));
     }
 
-    public async Task<QueryResult> ExecuteQuery(string cypherQuery, int maxRowsToReturn)
+    public async Task<QueryResult> ExecuteQueryAsync(string cypherQuery, int maxRowsToReturn, CancellationToken cancellationToken)
     {
         try
         {
-            var queryResults = await _client.ExecutableQuery(cypher: cypherQuery).ExecuteAsync();
+            var queryResults = await _client
+                .ExecutableQuery(cypher: cypherQuery)
+                .ExecuteAsync(token: cancellationToken);
 
             return false == queryResults.Result.Any() 
                 ? new QueryDidNotReturnAnyContent()
@@ -43,7 +47,7 @@ public class Neo4jService : IDisposable
                     Headers: queryResults.Keys,
                     Rows: [.. queryResults.Result
                             .Select(record => new Row(
-                                Values: [.. queryResults.Keys.Select(record.Get<string>)]))
+                                Values: [.. queryResults.Keys.Select((keyName, pos) => GetStringRepresentation(ofObject: record[pos]))]))
                             .Take(count: maxRowsToReturn)
                         ]
                     );
@@ -53,6 +57,25 @@ public class Neo4jService : IDisposable
             return new QueryCouldNotBeExecuted(Reason: ex.Message);
         }
     }
+
+    private static string GetStringRepresentation(object ofObject)
+    {
+        var theType = ofObject.GetType();
+
+        var r = ofObject switch {
+            IEnumerable<object> list => GetStringRepresentationOfList(list),
+            Dictionary<string, object> dict => GetStringRepresentationOfDictionary(dict),
+            _ => ofObject.ToString() ?? string.Empty
+        };
+
+        return r;
+    }
+
+    private static string GetStringRepresentationOfList(IEnumerable<object> list) =>
+        $"[{string.Join(separator: ", ", list.Select(GetStringRepresentation))}]";
+
+    private static string GetStringRepresentationOfDictionary(Dictionary<string, object> dict) =>
+        $"{{{string.Join(separator: ", ", dict.Select(kv => $"{GetStringRepresentation(kv.Key)}: {GetStringRepresentation(kv.Value)}"))}}}";
 
     public void Dispose()
     {

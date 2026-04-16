@@ -1,8 +1,8 @@
-﻿using System;
+﻿using Polly;
+using Polly.Retry;
+using System;
 using System.Linq;
 using System.Threading.Tasks;
-using Polly;
-using Polly.Retry;
 
 namespace Infrastructure;
 
@@ -14,20 +14,19 @@ internal class RetryPolicyUtility
             long millisecondsForEachRetry, Func<Exception, TimeSpan, int, ValueTask> onEachRetry) =>
             Policy
                 .Handle<Google.GenAI.ServerError>(e => e.StatusCode == 503)
-                .WaitAndRetryAsync(sleepDurations: GetLinearRetryTimes(
-                    maxRetryLimit: maxRetries, millisecondsForEachRetry: millisecondsForEachRetry),
+                .WaitAndRetryAsync(
+                    sleepDurations: GetLinearRetryTimes(maxRetryLimit: maxRetries, millisecondsForEachRetry: millisecondsForEachRetry),
                     onRetry: async (ex, ts, cn, ct) => await onEachRetry(ex, ts, cn));
 
-    public static AsyncRetryPolicy GetLinearBackOffRetryPolicyAsync<TException>(int maxRetries,
-            long millisecondsForEachRetry, Action<Exception, TimeSpan, int> onEachRetry)
-        where TException : Exception =>
+    public static AsyncRetryPolicy GetLinearBackOffRetryPolicy<TExpectedException>(int maxRetries,
+            long millisecondsForEachRetry, Func<Exception, TimeSpan, int, ValueTask> onEachRetry) where TExpectedException : Exception =>
             Policy
-                .Handle<TException>()
-                .WaitAndRetryAsync(sleepDurations: GetLinearRetryTimes(
-                    maxRetryLimit: maxRetries, millisecondsForEachRetry: millisecondsForEachRetry),
-                    onRetry: (ex, ts, cn, ct) => onEachRetry(ex, ts, cn));
+                .Handle<TExpectedException>()
+                .WaitAndRetryAsync(
+                    sleepDurations: GetLinearRetryTimes(maxRetryLimit: maxRetries, millisecondsForEachRetry: millisecondsForEachRetry),
+                    onRetry: async (ex, ts, cn, ct) => await onEachRetry(ex, ts, cn));
 
-    public static AsyncRetryPolicy GetExponentialBackOffRetryPolicyAsync<TException>(int maxRetries,
+    public static AsyncRetryPolicy GetExponentialBackOffRetryPolicy<TException>(int maxRetries,
             Action<Exception, TimeSpan, int> onEachRetry)
         where TException : Exception =>
             Policy
@@ -35,7 +34,7 @@ internal class RetryPolicyUtility
                 .WaitAndRetryAsync(sleepDurations: GetExponentialRetryTimes(maxRetryLimit: maxRetries),
                     onRetry: (ex, ts, cn, ct) => onEachRetry(ex, ts, cn));
 
-    public static AsyncRetryPolicy GetRandomBackOffRetryPolicyAsync<TException>(int maxRetries,
+    public static AsyncRetryPolicy GetRandomBackOffRetryPolicy<TException>(int maxRetries,
             Action<Exception, TimeSpan, int> onEachRetry)
         where TException : Exception =>
             Policy
