@@ -26,16 +26,16 @@ public class OrchestrationLogic
     private static async Task GetAnswer(string toUserQuestion, ILargeLanguageModel withLlmService,
         Neo4jService withNeo4jService, Callbacks.ReportProgress fnReportProgress)
     {
-        await fnReportProgress($"User question: {toUserQuestion}");
+        await fnReportProgress(new Callbacks.Information($"User question: {toUserQuestion}"));
 
         var cypherQueryToRun = await GetCypherQueryToUse(toUserQuestion: toUserQuestion, withLlmService: withLlmService);
-        await fnReportProgress($"\nCypher query to run:\n{cypherQueryToRun}\n");
+        await fnReportProgress(new Callbacks.CypherQueryToExecute(cypherQueryToRun));
 
-        var completeAnswer = CheckQueryResult(
-            queryResult: await withNeo4jService.ExecuteQuery(cypherQuery: cypherQueryToRun, maxRowsToReturn: 50),
+        var completeAnswer = await CheckQueryResult(
+            queryResult: await withNeo4jService.ExecuteQueryAsync(cypherQuery: cypherQueryToRun, maxRowsToReturn: 50, cancellationToken: default),
             fnEnhanceAnswerWithContent: async (content) => await EnhanceAnswer(toUserQuestion: toUserQuestion, usingNeo4jResults: content, withLlmService: withLlmService));
 
-        await fnReportProgress($"Final answer: {completeAnswer}\n");
+        await fnReportProgress(new Callbacks.FinalUserResponse(completeAnswer));
     }
 
     private static async Task<string> GetCypherQueryToUse(string toUserQuestion, ILargeLanguageModel withLlmService) =>
