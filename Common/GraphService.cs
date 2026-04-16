@@ -28,8 +28,12 @@ public class GraphService
         {usingTableInformation}
         </information>
 
-        Please, provide a complete answer to the user question, using the information provided.
-        Please DO NOT invent any information that is not included in the provided information. Thank you!
+        Requirements:
+        - Please, provide a complete answer to the user question, using the information provided.
+        - Please DO NOT invent any information that is not included in the provided information.
+        - If user wants charts to be rendered, please always render them in Mermaid JS format, returning its valid string representation of that requested chart
+
+        Thank you
         """;
 
     public static string CreateJsonStructuredOutputSchemaForSuggestedQueryDTO() => """
