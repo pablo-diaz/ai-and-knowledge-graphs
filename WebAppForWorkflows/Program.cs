@@ -79,7 +79,7 @@ public class Program
                 : Results.Stream(
                     contentType: "text/event-stream",
                     streamWriterCallback: s => {
-                        return hub.GetStreamOfAnswersAsync(
+                        return hub.PutResponsesAsync(
                             ofSession: WorkflowSessionsHub.Session.From(id: sessionId),
                             intoStream: s,
                             ct: ct);
