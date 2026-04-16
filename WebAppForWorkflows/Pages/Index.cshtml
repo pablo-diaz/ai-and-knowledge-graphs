@@ -20,8 +20,14 @@
     <div>
         <br/>
         <span style="visibility:hidden;" id="txtSessionId">@Model.UserSession.Id</span>
+
+        <br /><button id="btnCancel" style="display: none;">Cancel</button><br />
         <div id="dvProgress" class="event-container d-flex flex-column gap-3">
-            <p class="text-muted" id="empty-state">Answering...</p>
+            <p class="text-muted" id="txtInformation"></p>
+        </div>
+        
+        <div id="dvFinalAnswer" class="event-container d-flex flex-column gap-3">
+            <p class="text-muted" id="txt-to-remove">Answering...</p>
         </div>
 
         <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
